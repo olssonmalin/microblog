@@ -66,18 +66,37 @@ class User(UserMixin, db.Model):
         return url
 
     def follow(self, user):
+        """
+        Follow a user.
+        :param user:
+        :return:
+        """
         if not self.is_following(user):
             self.followed.append(user)
 
     def unfollow(self, user):
+        """
+        Unfollow a user.
+        :param user:
+        :return:
+        """
         if self.is_following(user):
             self.followed.remove(user)
 
     def is_following(self, user):
+        """
+        Check if the user is followed.
+        :param user:
+        :return:
+        """
         return self.followed.filter(
             followers.c.followed_id == user.id).count() > 0
 
     def followed_posts(self):
+        """
+        Fetch followed posts.
+        :return:
+        """
         followed = Post.query.join(
             followers, (followers.c.followed_id == Post.user_id)).filter(
             followers.c.follower_id == self.id)
