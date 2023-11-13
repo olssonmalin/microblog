@@ -16,7 +16,7 @@ services:
       retries: 3
 
   prod:
-    image: jflindberg/microblog:1.0.0-prod
+    image: jflindberg/microblog:v1.1.1-prod
     restart: always
     depends_on:
       mysql:
@@ -30,7 +30,9 @@ services:
       DATABASE_URL: "mysql+pymysql://microblog:example@dbserver/microblog"
 
   test:
-    image: jflindberg/microblog:1.0.0-test
+    build:
+      context: .
+      dockerfile: docker/Dockerfile_test
     volumes:
       - ./app:/home/microblog/app
       - ./tests:/home/microblog/tests
