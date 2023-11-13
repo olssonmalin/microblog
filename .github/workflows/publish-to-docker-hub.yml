@@ -43,4 +43,4 @@ jobs:
           file: ./docker/Dockerfile_prod
           push: true
           tags: ${{ github.event.release.tag_name }}-prod
-          labels: ${{ steps.meta.outputs.labels }}
+          labels: jflindberg/microblog:${{ steps.meta.outputs.labels }}
