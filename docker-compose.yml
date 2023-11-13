@@ -1,0 +1,38 @@
+version: '3'
+services:
+  mysql:
+    image: mysql/mysql-server:5.7
+    restart: always
+    environment:
+      MYSQL_DATABASE: "microblog"
+      MYSQL_USER: "microblog"
+      MYSQL_PASSWORD: "example"
+      MYSQL_ONETIME_PASSWORD: false
+      MYSQL_RANDOM_ROOT_PASSWORD: "no"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  prod:
+    image: jflindberg/microblog:1.0.0-prod
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8000:5000"
+    links:
+      - "mysql:dbserver"
+    environment:
+      SECRET_KEY: "my-secret-key"
+      DATABASE_URL: "mysql+pymysql://microblog:example@dbserver/microblog"
+
+  test:
+    image: jflindberg/microblog:1.0.0-test
+    volumes:
+      - ./app:/home/microblog/app
+      - ./tests:/home/microblog/tests
+
+
