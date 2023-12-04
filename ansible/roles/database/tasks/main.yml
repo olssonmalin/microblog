@@ -1,0 +1,18 @@
+---
+# - name: Create data volume
+    
+- name: Create a data container
+  community.docker.docker_container:
+    name: mysql
+    image: mysql/mysql-server:5.7
+    restart_policy: "always"
+    published_ports:
+      - "3306:3306"
+    env: 
+      MYSQL_DATABASE: "microblog"
+      MYSQL_USER: "microblog"
+      MYSQL_PASSWORD: "example"
+      MYSQL_ONETIME_PASSWORD: "false"
+      MYSQL_RANDOM_ROOT_PASSWORD: "no"
+    # volumes:
+    #   - /data

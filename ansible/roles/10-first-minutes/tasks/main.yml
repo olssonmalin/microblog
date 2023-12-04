@@ -43,6 +43,12 @@
         key: "{{ lookup('file', item) }}"
     with_items: "{{ pub_ssh_key_location }}"
 
+- name: Set ssh keys for regular users
+  authorized_key:
+    user: "{{ server_user }}"
+    key: "{{ lookup('file', item.key) }}"
+  with_items: "{{ users_users }}"
+  when: item.key is defined
 
 -   name: Add user to sudoers
     lineinfile:

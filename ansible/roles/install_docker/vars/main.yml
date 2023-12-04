@@ -1,0 +1,13 @@
+---
+prereq:
+    - curl
+    - ca-certificates
+    - gnupg
+docker:
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    - docker-buildx-plugin
+    - docker-compose-plugin
+    - python3-pip
+
