@@ -1,0 +1,6 @@
+---
+packages:
+  - nginx
+  - certbot
+  - python3-certbot-nginx
+lb_method: least_conn

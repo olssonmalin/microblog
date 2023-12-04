@@ -1,0 +1,13 @@
+---
+- name: Create appservice container
+  community.docker.docker_container:
+    name: prod
+    image: "jflindberg/microblog:{{ app_version }}-prod"
+    restart_policy: "always"
+    published_ports:
+      - "8000:5000"
+    env: 
+      SECRET_KEY: "my-secret-key"
+      DATABASE_URL: "mysql+pymysql://{{ db_username }}:{{ db_password }}@{{ groups.database[0] }}:3306/{{ db_name }}"
+    # volumes:
+    #   - /data

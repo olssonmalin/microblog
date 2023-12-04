@@ -1,0 +1,53 @@
+---
+- name: Update apt-cache and upgrade
+  apt:
+    force_apt_get: yes
+    update_cache: "True"
+    cache_valid_time: 3600
+    upgrade: yes
+- name: Install packages
+  apt:
+    force_apt_get: yes
+    name: "{{ packages }}"
+
+# certificates
+- name: Register certbot
+  shell: |
+    certbot -n register --agree-tos --email mapy21@student.bth.se
+    touch /etc/letsencrypt/.registered
+  args:
+    creates: /etc/letsencrypt/.registered
+  tags:
+    - nginx
+    - certbot
+
+- name: 'Get certificate'
+  shell: 'certbot -n --nginx -d {{ domain_name }}'
+  args:
+    creates: '/etc/letsencrypt/live/{{ domain_name }}'
+  tags:
+    - nginx
+    - certbot
+
+- name: Copy load balancer configuration file
+  template:
+    src: load_balancer.conf.j2
+    dest: /etc/nginx/sites-available/load-balancer.conf
+- name: Link nginx conf and sites-enabled
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/load-balancer.conf
+    dest: /etc/nginx/sites-enabled/load-balancer.conf
+    state: link
+    force: True
+  notify: Reload NGINX
+- name: Copy nginx configuration file
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/nginx.conf
+- name: Validate nginx configuration
+  shell: sudo nginx -t
+  register: nginx_validation
+- name: debug validation
+  debug:
+    var: nginx_validation
+

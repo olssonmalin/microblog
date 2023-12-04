@@ -3,19 +3,33 @@
 ansible_python_interpreter: "python3"
 
 region: northeurope
-resource_group: <your resource group> # Change me
-domain_name: <your domain> # Change me
+resource_group: DIDA-MAPY21-DV1673-H23-LP2 # Change me
+domain_name: malin-o.tech # Change me
 
-admin_email: <an email>
+admin_email: mapy21@student.bth.se
 
 vmtags:
-    StudentId: <acronym> # Change me
+    StudentId: mapy21 # Change me
 
 
-pub_ssh_key_location: '<path to you local ssh public key>' # Change me, your local ssh key!
+pub_ssh_key_location: '~/.ssh/azure.pub' # Change me, your local ssh key!
 
 
 server_user: "deploy"
-server_user_pass: "<a password>" # change me
+server_user_pass: "test" # change me
 server_user_groups:
     -   sudo
+
+db_username: "microblog"
+db_password: "example"
+db_name: "microblog"
+
+app_version: v1.1.1
+
+users_users:
+  - user: mapy21
+    name: Malin Olsson
+    key: files/mapy21.pub
+  - user: fili21
+    name: Filip Lindberg
+    key: files/fili21.pub

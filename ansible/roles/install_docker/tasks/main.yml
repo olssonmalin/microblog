@@ -1,0 +1,60 @@
+---
+- name: Update apt-cache and upgrade
+  apt:
+    force_apt_get: yes
+    update_cache: "True"
+    cache_valid_time: 3600
+    upgrade: yes
+- name: Install packages
+  apt:
+    force_apt_get: yes
+    name: "{{ prereq }}"
+- name: Ensure keyring exists
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+- name: Add Docker's official GPG key to keyring
+  shell: curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  args:
+    creates: /etc/apt/keyrings/docker.gpg
+- name: Set permissions to docker key
+  file:
+    path: /etc/apt/keyrings/docker.gpg
+    mode: '0644'
+
+- name: Add Docker repository to Apt sources
+  shell: |
+    echo \
+    "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+    "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+- name: Update Apt repositories
+  apt:
+    update_cache: yes
+
+- name: Install packages
+  apt:
+    force_apt_get: yes
+    name: "{{ docker }}"
+
+- name: Pip version
+  shell: pip3 --version
+  register: pip_version
+
+- name: Display pip version
+  debug:
+    var: pip_version
+
+- name: Install Docker
+  pip:
+    name: docker
+
+- name: docker version
+  shell: docker version
+  register: docker_version
+
+- name: Display docker version
+  debug:
+    var: docker_version
