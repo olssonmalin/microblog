@@ -1,4 +1,8 @@
 ---
+- name: Install Docker
+  include_role:
+    name: install_docker
+  tags: init
 - name: Create appservice container
   community.docker.docker_container:
     name: prod
@@ -8,6 +12,7 @@
       - "8000:5000"
     env: 
       SECRET_KEY: "my-secret-key"
-      DATABASE_URL: "mysql+pymysql://{{ db_username }}:{{ db_password }}@{{ groups.database[0] }}:3306/{{ db_name }}"
+      DATABASE_URL: "{{ db_url | default('mysql+pymysql://{{ db_username }}:{{ db_password }}@{{ groups.database[0] }}:3306/{{ db_name }}') }}"
+      APP_VERSION: "{{ app_version }}"
     # volumes:
     #   - /data

@@ -24,8 +24,6 @@ db_username: "microblog"
 db_password: "example"
 db_name: "microblog"
 
-app_version: v1.1.1
-
 users_users:
   - user: mapy21
     name: Malin Olsson

@@ -1,0 +1,32 @@
+---
+-   hosts: appservers
+    remote_user: "{{ server_user }}"
+    become: yes
+    become_method: sudo
+    serial: 1
+    pre_tasks:
+      - name: Get docker container info
+        docker_container_info:
+            name: prod
+        register: docker_info
+      - name: Set DB url
+        set_fact:
+          db_url: "{{ docker_info.container.Config.Env | select( 'match', '^DATABASE_URL=') | map('regex_replace', '^DATABASE_URL=', '') | first }}"
+      - name: print docker container info
+        debug:
+          msg: "{{ db_url }}"
+    roles:
+      - role: appserver
+    tasks:
+      - name: Get docker container info
+        docker_container_info:
+            name: prod
+        register: docker_info
+      - name: Get current version
+        set_fact:
+          current_version: "{{ docker_info.container.Config.Image |  split(':') | last | split('-') | first }}"
+      - name: Verify version
+        assert:
+          that:
+            - current_version == app_version
+        

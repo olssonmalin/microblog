@@ -12,8 +12,8 @@ instances:
 relative_names:
     - name: www # www.<domain>
     - name: "@" # so <domain> works as a URL. Otherwise only www.<domain> would work.
-    - name: www.appserver1
-    - name: www.appserver2
-    - name: appserver1
-    - name: appserver2
+    # - name: www.appserver1
+    # - name: www.appserver2
+    # - name: appserver1
+    # - name: appserver2
 
