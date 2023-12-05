@@ -8,7 +8,7 @@ from app import db
 from app.main.forms import EditProfileForm, PostForm
 from app.models import User, Post
 from app.main import bp
-
+from microblog import app
 
 
 @bp.before_request
@@ -122,3 +122,16 @@ def unfollow(username):
     db.session.commit()
     flash(f'You are not following {username}.')
     return redirect(url_for('main.user', username=username))
+
+@bp.route('/version')
+def version():
+    """
+    Get current app version.
+    """
+    current_version = app.config['APP_VERSION']
+    if current_version is None:
+        flash(f'Version not found.')
+        return redirect(url_for('index'))
+
+    return render_template('version.html', version=current_version)
+
