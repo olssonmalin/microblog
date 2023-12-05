@@ -1,12 +1,5 @@
 # Gather facts from remote instance and set as hosts
 ---
--   hosts: local
-    connection: local
-    gather_facts: False
-    collections:
-        - azure.azcollection
-    roles:
-        - gather_instances
 -   hosts: database
     remote_user: "{{ server_user }}"
     become: yes
@@ -18,13 +11,17 @@
     become: yes
     become_method: sudo
     roles:
-        -   appserver
+      - role: appserver
+        app_version: "{{ app_version }}"
+        
 -   hosts: appserver2
     remote_user: "{{ server_user }}"
     become: yes
     become_method: sudo
     roles:
-        -   appserver
+      - role: appserver
+        app_version: "{{ app_version }}"
+
 -   hosts: loadbalancer
     remote_user: "{{ server_user }}"
     become: yes

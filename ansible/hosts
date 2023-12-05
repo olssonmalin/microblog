@@ -1,2 +1,5 @@
 [local]
 localhost ansible_connection=local
+
+[appservers]
+appserver[1:2].malin-o.tech ansible_user="deploy"
