@@ -1,12 +1,12 @@
 name: Roll out changes on Ansible hosts
 
 on:
-  workflow_run:
-    workflows: ["Publish Docker image"]
-    types:
-      - completed
+  release:
+    types: [published]
 
 jobs:
+  publish-to-docker:
+    uses: ./.github/workflows/publish-to-docker-hub.yml
   roll-out-changes:
     name: Roll out versions on Ansible hosts
     runs-on: ubuntu-latest
@@ -29,6 +29,7 @@ jobs:
 
       - name: Run Ansible Playbook
         run: |
+          echo "Release Tag Name: ${{ github.event.release.tag_name }}"
           ansible-playbook cd_appserver.yml --skip-tags init -e "app_version=${{ github.event.release.tag_name }}"
 
         env:
