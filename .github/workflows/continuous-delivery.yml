@@ -10,6 +10,9 @@ jobs:
   roll-out-changes:
     name: Roll out versions on Ansible hosts
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible  # Set the working directory for all steps in this job
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
@@ -26,7 +29,8 @@ jobs:
 
       - name: Run Ansible Playbook
         run: |
-          ansible-playbook ./ansible/cd_appserver.yml --skip-tags init -e "app_version=${{ github.event.release.tag_name }}"
+          ansible-playbook cd_appserver.yml --skip-tags init -e "app_version=${{ github.event.release.tag_name }}"
 
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
+
