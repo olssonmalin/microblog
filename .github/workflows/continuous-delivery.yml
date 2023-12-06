@@ -1,12 +1,9 @@
 name: Roll out changes on Ansible hosts
 
 on:
-  release:
-    types: [published]
+  workflow_call:
 
 jobs:
-  publish-to-docker:
-    uses: ./.github/workflows/publish-to-docker-hub.yml
   roll-out-changes:
     name: Roll out versions on Ansible hosts
     runs-on: ubuntu-latest

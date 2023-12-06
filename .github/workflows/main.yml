@@ -1,0 +1,17 @@
+name: Roll out changes on Ansible hosts
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-and-test:
+    uses: ./.github/workflows/python-app.yml
+  publish-to-docker-hub:
+    uses: ./.github/workflows/publish-to-docker-hub.yml
+    needs: build-and-test
+    secrets: inherit
+  continuous-delivery:
+    uses: ./.github/workflows/continuous-delivery.yml
+    needs: publish-to-docker-hub
+    secrets: inherit
