@@ -8,7 +8,6 @@ from app import db
 from app.main.forms import EditProfileForm, PostForm
 from app.models import User, Post
 from app.main import bp
-from microblog import app
 
 
 @bp.before_request
@@ -128,7 +127,7 @@ def version():
     """
     Get current app version.
     """
-    current_version = app.config['APP_VERSION']
+    current_version = current_app.config['APP_VERSION']
     if current_version is None:
         flash(f'Version not found.')
         return redirect(url_for('index'))
