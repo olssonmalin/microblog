@@ -1,4 +1,4 @@
-name: Roll out changes on Ansible hosts
+name: Main workflow on new release
 
 on:
   release:
@@ -7,11 +7,14 @@ on:
 jobs:
   build-and-test:
     uses: ./.github/workflows/python-app.yml
+  continuous-security:
+    uses: ./.github/workflows/continuous-security.yml
+    needs: build-and-test
   publish-to-docker-hub:
     uses: ./.github/workflows/publish-to-docker-hub.yml
-    needs: build-and-test
+    needs: continuous-security
     secrets: inherit
   continuous-delivery:
     uses: ./.github/workflows/continuous-delivery.yml
-    needs: publish-to-docker-hub
+    needs: [build-and-test, continuous-security, publish-to-docker-hub]
     secrets: inherit
