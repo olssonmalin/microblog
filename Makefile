@@ -215,3 +215,26 @@ install-test:
 install-deploy:
 	${pip} install -r requirements/deploy.txt
 	cd ansible && ansible-galaxy install -r requirements.yml
+
+
+# target: bandit-scan						- Run Bandit
+.PHONY: bandit-scan
+bandit-scan:
+	bandit -r app
+
+# target: trivy-scan-image					- Build image and run Trivy scan on it
+.PHONY: trivy-scan-image
+trivy-scan-image:
+	docker build -f docker/Dockerfile_prod -t microblog:$(TAG) .
+	trivy image --scanners vuln,secret,config microblog:$(TAG)
+
+# target: trivy-scan-repo				- Run Trivy scan on repository
+.PHONY: trivy-scan-repo
+trivy-scan-repo:
+	trivy fs --scanners vuln,secret,config --skip-dirs "./venv" ./
+
+# target: dockle-scan					 - Build image and run Dockle on it. Ignores DKL-LI-0003, considered FP.
+.PHONY: dockle-scan
+dockle-scan:
+	docker build -f docker/Dockerfile_prod -t microblog:$(TAG) .
+	dockle --ignore DKL-LI-0003 microblog:$(TAG)

@@ -34,6 +34,8 @@ jobs:
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
+        env:
+          DOCKER_CONTENT_TRUST: 1
         with:
           context: .
           file: ./docker/Dockerfile_prod

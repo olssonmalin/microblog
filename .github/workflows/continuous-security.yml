@@ -1,0 +1,42 @@
+name: Run security checks and tests
+
+on:
+  workflow_call:
+
+jobs:
+  security:
+    name: Run security checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install make
+          pip install bandit
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.47.0/trivy_0.47.0_Linux-64bit.tar.gz
+          tar zxvf trivy_0.47.0_Linux-64bit.tar.gz
+          sudo mv trivy /usr/local/bin/trivy
+          rm trivy_0.47.0_Linux-64bit.tar.gz
+          wget https://github.com/goodwithtech/dockle/releases/download/v0.4.13/dockle_0.4.13_Linux-64bit.tar.gz
+          tar xzvf dockle_0.4.13_Linux-64bit.tar.gz
+          sudo mv dockle /usr/local/bin/
+          rm dockle_0.4.13_Linux-64bit.tar.gz
+
+      - name: Run Bandit
+        run: make bandit
+
+      - name: Run Trivy scan on Docker image
+        run: make trivy-scan-image TAG=${{ github.event.release.tag_name }}-prod
+
+      - name: Run Trivy scan on repository
+        run: make trivy-scan-repo
+
+      - name: Run Dockle on image
+        run: make dockle-scan TAG=${{ github.event.release.tag_name }}-prod

@@ -2,6 +2,10 @@
 FROM python:3.8-alpine
 RUN adduser -D microblog
 
+ENV FLASK_APP microblog.py
+
+RUN apk update && apk upgrade
+
 WORKDIR /home/microblog
 
 # COPY . .
@@ -10,14 +14,10 @@ COPY migrations migrations
 COPY requirements requirements
 COPY requirements.txt microblog.py boot.sh ./
 
-RUN <<-EOF 
-    python -m venv .venv
-    .venv/bin/pip3 install -r requirements.txt
-EOF
-
-ENV FLASK_APP microblog.py
-
 RUN <<-EOF
+    pip install --upgrade pip setuptools
+    python -m venv .venv
+    .venv/bin/pip3 install --no-cache-dir -r requirements.txt
     chmod +x boot.sh
     chown -R microblog:microblog ./
 EOF
@@ -25,4 +25,8 @@ EOF
 USER microblog
 
 EXPOSE 5000
+
+HEALTHCHECK --interval=10m --timeout=10s \
+ CMD wget --quiet --tries=1 --spider http://localhost:5000/ || exit 1
+
 ENTRYPOINT ["./boot.sh"]
