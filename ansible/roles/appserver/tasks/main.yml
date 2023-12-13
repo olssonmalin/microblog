@@ -12,7 +12,7 @@
       - "8000:5000"
     env: 
       SECRET_KEY: "my-secret-key"
-      DATABASE_URL: "{{ db_url | default('mysql+pymysql://{{ db_username }}:{{ db_password }}@{{ groups.database[0] }}:3306/{{ db_name }}') }}"
+      DATABASE_URL: "{{ db_url | default('mysql+pymysql://' + db_username + ':' + db_password + '@' + groups.database[0] + ':' + '3306/' + db_name ) }}"
       APP_VERSION: "{{ app_version }}"
     # volumes:
     #   - /data

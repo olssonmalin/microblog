@@ -38,7 +38,7 @@ sg_groups:
             access: Allow
             priority: 1002
             direction: Inbound
-            source_address_prefix: '0.0.0.0/0'
+            source_address_prefix: "{{ groups['loadbalancer'][0] | default('0.0.0.0/0') }}/32"
     -   name: database
         port_rules:
         -   name: SSH
@@ -54,4 +54,6 @@ sg_groups:
             access: Allow
             priority: 1002
             direction: Inbound
-            source_address_prefix: '0.0.0.0/0'
+            source_address_prefix:
+                - "{{ groups['appserver1'][0]  | default('0.0.0.0/0') }}/32"
+                - "{{ groups['appserver2'][0]  | default('0.0.0.0/0') }}/32"
