@@ -58,19 +58,28 @@
         state: present
         validate: '/usr/sbin/visudo -cf %s' # kan få fel med line "{{ server_user }} testing"
 
--   name: Disallow root and password ssh access
-    lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: "{{ item.regexp }}"
-        line: "{{ item.line }}"
-        state: present
-        validate: '/usr/sbin/sshd -T -f %s' # kan få fel med line "PermitRootLogin testing"
-    with_items:
-        - regexp: "^PasswordAuthentication"
-          line: "PasswordAuthentication no"
-        - regexp: "^PermitRootLogin"
-          line: "PermitRootLogin no"
+-   name: Replace sshd_config
+    copy:
+        src: files/sshd_config
+        dest: /etc/ssh/sshd_config
+        owner: root
+        group: root
+        mode: "0644"
     notify: restart ssh
+
+#-   name: Disallow root and password ssh access
+#    lineinfile:
+#        path: /etc/ssh/sshd_config
+#        regexp: "{{ item.regexp }}"
+#        line: "{{ item.line }}"
+#        state: present
+#        validate: '/usr/sbin/sshd -T -f %s' # kan få fel med line "PermitRootLogin testing"
+#    with_items:
+#        - regexp: "^PasswordAuthentication"
+#          line: "PasswordAuthentication no"
+#        - regexp: "^PermitRootLogin"
+#          line: "PermitRootLogin no"
+#    notify: restart ssh
 
 -   name: flush handlers to restart SSH
     meta: flush_handlers # we cant do it later because after this we cant ssh as root
