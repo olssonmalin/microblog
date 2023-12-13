@@ -9,6 +9,9 @@ http {
     access_log /var/log/nginx/access.log;
     error_log /var/log/nginx/error.log;
 
+    # WARN-NEW: Server Leaks Version Information via "Server" HTTP Response Header Field
+    server_tokens off;
+
     # This server accepts all traffic to port 80 and passes it to the upstream. 
     # Notice that the upstream name and the proxy_pass need to match.
 
@@ -19,19 +22,32 @@ http {
     
        location / {
           proxy_pass http://app-hosts;
+
         }
     }
     server {
        listen 443 ssl;
        server_name  {{ domain_name }} www.{{ domain_name }};
-       add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
+       add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
         
        ssl_certificate /etc/letsencrypt/live/{{ domain_name }}/cert.pem;
        ssl_certificate_key /etc/letsencrypt/live/{{ domain_name }}/privkey.pem;
        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
 
-       location / {
-          proxy_pass http://app-hosts;
+       # WARN-NEW: Cookie Without Secure Flag [10011] x 11  
+       # WARN-NEW: Cookie Without HTTPOnly
+       # WARN-NEW: Cookie without SameSite Attribute [10054] x 11 
+       proxy_cookie_path / "/; HTTPOnly;   Secure; SameSite=Strict";
+
+       # WARN-NEW: X-Content-Type-Options Header Missing [10021] x 6 
+        add_header X-Content-Type-Options nosniff always;
+
+        # WARN-NEW: Missing Anti-clickjacking Header [10020] x 6 
+        add_header X-Frame-Options SAMEORIGIN always;
+
+        location / {
+            proxy_pass http://app-hosts;
+
        }
     }
 }

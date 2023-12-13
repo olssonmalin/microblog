@@ -1,0 +1,13 @@
+---
+-   name: Update virtual network interface card
+    azure_rm_networkinterface:
+      resource_group: "{{ resource_group }}"
+      name: "{{ iname }}-NIC"
+      virtual_network: "microblog-Vnet"
+      subnet: "microblog-Subnet"
+      ip_configurations:
+          - name: ipconfig1
+            public_ip_address_name: "{{ iname }}-ip"
+      security_group: "{{ itype }}-sg"
+      tags: "{{ vmtags }}"
+    # delegate_to: 127.0.0.1

@@ -1,5 +1,12 @@
 # Gather facts from remote instance and set as hosts
 ---
+-   hosts: local
+    connection: local
+    gather_facts: False
+    collections:
+        - azure.azcollection
+    roles:
+        - gather_instances
 -   hosts: database
     remote_user: "{{ server_user }}"
     become: yes

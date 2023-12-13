@@ -29,8 +29,6 @@
     collections:
         - azure.azcollection
 
-
-
 -   name: remove security groups
     hosts: local
     gather_facts: False

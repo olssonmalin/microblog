@@ -5,10 +5,12 @@
     update_cache: "True"
     cache_valid_time: 3600
     upgrade: yes
+
 - name: Install packages
   apt:
     force_apt_get: yes
     name: "{{ packages }}"
+    state: "latest"
 
 # certificates
 - name: Register certbot
@@ -22,7 +24,7 @@
     - certbot
 
 - name: 'Get certificate'
-  shell: 'certbot -n --nginx -d {{ domain_name }}'
+  shell: 'certbot -n --nginx -d {{ domain_name }} -d www.{{ domain_name }}'
   args:
     creates: '/etc/letsencrypt/live/{{ domain_name }}'
   tags:
@@ -47,6 +49,8 @@
 - name: Validate nginx configuration
   shell: sudo nginx -t
   register: nginx_validation
+- name: Reload nginx
+  shell: sudo service nginx reload
 - name: debug validation
   debug:
     var: nginx_validation
