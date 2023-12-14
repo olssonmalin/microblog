@@ -20,6 +20,7 @@
     roles:
       - role: appserver
         app_version: "{{ app_version }}"
+        db_url: "{{ 'mysql+pymysql://' + db_username + ':' + db_password + '@' + groups.database[0] + ':' + '3306/' + db_name }}"
         
 -   hosts: appserver2
     remote_user: "{{ server_user }}"
@@ -28,6 +29,7 @@
     roles:
       - role: appserver
         app_version: "{{ app_version }}"
+        db_url: "{{ 'mysql+pymysql://' + db_username + ':' + db_password + '@' + groups.database[0] + ':' + '3306/' + db_name }}"
 
 -   hosts: loadbalancer
     remote_user: "{{ server_user }}"
