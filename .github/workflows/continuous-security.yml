@@ -30,7 +30,7 @@ jobs:
           rm dockle_0.4.13_Linux-64bit.tar.gz
 
       - name: Run Bandit
-        run: make bandit
+        run: make bandit-scan
 
       - name: Run Trivy scan on Docker image
         run: make trivy-scan-image TAG=${{ github.event.release.tag_name }}-prod
