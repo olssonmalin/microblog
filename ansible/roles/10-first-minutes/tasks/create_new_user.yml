@@ -1,0 +1,59 @@
+---
+-   name: Set root password
+    user:
+        name: root
+        password: "{{ root_password }}"
+
+-   name: Update apt-cache and upgrade
+    apt:
+        force_apt_get: yes
+        update_cache: "True"
+        cache_valid_time: 3600
+        upgrade: yes
+
+-   name: Install packages
+    apt:
+        force_apt_get: yes
+        name: "{{ packages }}"
+
+-   name: Copy unattended upgrades 10 settings
+    copy:
+        mode: "644"
+        src: files/apt_periodic
+        dest: /etc/apt/apt.conf.d/10periodic
+
+-   name: Copy unattended upgrades 50 settings
+    copy:
+        mode: "644"
+        src: files/apt_periodic_50
+        dest: /etc/apt/apt.conf.d/50unattended-upgrades
+
+-   name: Create user
+    user:
+        name: "{{ server_user }}"
+        password: "{{ server_user_pass }}"
+        state: present
+        shell: /bin/bash
+        groups: "{{ server_user_groups }}"
+
+-   name: Add ssh-key for new user
+    authorized_key:
+        user: "{{ server_user }}"
+        state: present
+        key: "{{ lookup('file', item) }}"
+    with_items: "{{ pub_ssh_key_location }}"
+
+- name: Set ssh keys for regular users
+  authorized_key:
+    user: "{{ server_user }}"
+    key: "{{ lookup('file', item.key) }}"
+  with_items: "{{ users_users }}"
+  when: item.key is defined
+
+-   name: Add user to sudoers
+    lineinfile:
+        dest: /etc/sudoers
+        regexp: "{{ server_user }} ALL"
+        line: "{{ server_user }} ALL=(ALL) NOPASSWD:ALL"
+        state: present
+        validate: '/usr/sbin/visudo -cf %s' # kan få fel med line "{{ server_user }} testing"
