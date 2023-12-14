@@ -39,7 +39,7 @@ jobs:
         run: make trivy-scan-repo
 
       - name: Set DOCKER_CONTENT_TRUST var for Dockle scan
-        run: export DOCKER_CONTENT_TRUST=1
+        run: echo "DOCKER_CONTENT_TRUST=1" >> $GITHUB_ENV
 
       - name: Run Dockle on image
         run: make dockle-scan TAG=${{ github.event.release.tag_name }}-prod
