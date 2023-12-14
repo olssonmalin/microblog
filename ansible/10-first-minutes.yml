@@ -7,8 +7,10 @@
     roles:
         - gather_instances
 -   hosts: devops
-    remote_user: azureuser
     become: yes
     become_method: sudo
+    gather_facts: False
     roles:
-        -   10-first-minutes
+      - role: 10-first-minutes
+        vars:
+          old_user: azureuser
