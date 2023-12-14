@@ -14,9 +14,11 @@ COPY migrations migrations
 COPY requirements requirements
 COPY requirements.txt microblog.py boot.sh ./
 
+RUN pip install --upgrade pip setuptools
+
 RUN <<-EOF
-    pip install --upgrade pip setuptools
     python -m venv .venv
+    .venv/bin/pip3 install --upgrade pip setuptools
     .venv/bin/pip3 install --no-cache-dir -r requirements.txt
     chmod +x boot.sh
     chown -R microblog:microblog ./
