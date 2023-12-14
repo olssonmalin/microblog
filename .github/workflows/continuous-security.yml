@@ -33,12 +33,13 @@ jobs:
         run: make bandit-scan
 
       - name: Run Trivy scan on Docker image
-        env:
-          DOCKER_CONTENT_TRUST: 1
         run: make trivy-scan-image TAG=${{ github.event.release.tag_name }}-prod
 
       - name: Run Trivy scan on repository
         run: make trivy-scan-repo
+
+      - name: Set DOCKER_CONTENT_TRUST var for Dockle scan
+        run: export DOCKER_CONTENT_TRUST=1
 
       - name: Run Dockle on image
         run: make dockle-scan TAG=${{ github.event.release.tag_name }}-prod
