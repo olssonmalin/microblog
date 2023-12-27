@@ -13,6 +13,7 @@ COPY app app
 COPY migrations migrations
 COPY requirements requirements
 COPY requirements.txt microblog.py boot.sh ./
+COPY gunicorn_config.py gunicorn_config.py
 
 RUN pip install --upgrade pip setuptools
 
@@ -25,6 +26,8 @@ RUN <<-EOF
 EOF
 
 USER microblog
+
+ENV prometheus_multiproc_dir /tmp
 
 EXPOSE 5000
 
