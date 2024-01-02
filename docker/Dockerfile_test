@@ -23,8 +23,6 @@ RUN <<-EOF
     chown -R microblog:microblog ./
 EOF
 
-ENV prometheus_multiproc_dir /tmp
-
 USER microblog
 
 EXPOSE 5000

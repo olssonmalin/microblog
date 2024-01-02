@@ -45,7 +45,7 @@ class TestConfig(Config):
     BCRYPT_LOG_ROUNDS = 4
     # Disable CSRF tokens in the Forms (only valid for testing purposes!)
     WTF_CSRF_ENABLED = False
-    PROMETHEUS_MULTIPROC_DIR = "/tmp"
+
 
 
 class RequestFormatter(Formatter):
