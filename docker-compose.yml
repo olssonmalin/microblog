@@ -1,4 +1,12 @@
 version: '3'
+
+networks:
+  monitor:
+
+volumes:
+  prometheus-data: { }
+  grafana-data: { }
+
 services:
   mysql:
     image: mysql/mysql-server:5.7
@@ -9,32 +17,95 @@ services:
       MYSQL_PASSWORD: "example"
       MYSQL_ONETIME_PASSWORD: false
       MYSQL_RANDOM_ROOT_PASSWORD: "no"
+    networks:
+      - monitor
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost"]
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost" ]
       interval: 10s
       timeout: 5s
       retries: 3
 
   prod:
-    image: jflindberg/microblog:v1.1.1-prod
+    build:
+      context: .
+      dockerfile: Docker/Dockerfile_prod
     restart: always
+    container_name: prod
     depends_on:
       mysql:
         condition: service_healthy
     ports:
-      - "8000:5000"
+      - "5000:5000"
+    networks:
+      - monitor
     links:
       - "mysql:dbserver"
     environment:
       SECRET_KEY: "my-secret-key"
       DATABASE_URL: "mysql+pymysql://microblog:example@dbserver/microblog"
+#
+#  test:
+#    build:
+#      context: .
+#      dockerfile: docker/Dockerfile_test
+#    volumes:
+#      - ./app:/home/microblog/app
+#      - ./tests:/home/microblog/tests
 
-  test:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile_test
+  node-exporter:
+    image: prom/node-exporter:v1.2.2
+    container_name: node-exporter
+    restart: unless-stopped
     volumes:
-      - ./app:/home/microblog/app
-      - ./tests:/home/microblog/tests
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"
+    networks:
+      - monitor
 
+  prometheus:
+    image: prom/prometheus:v2.31.1
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+      - ./rules.yml:/etc/prometheus/rules.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--storage.tsdb.retention.time=24h"
+      - "--web.enable-lifecycle"
+    networks:
+      - monitor
+    ports:
+      - "9090:9090"
 
+  grafana:
+    image: grafana/grafana:8.2.4
+    restart: unless-stopped
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - monitor
+    ports:
+      - "3000:3000"
+
+  alertmanager:
+    image: prom/alertmanager:v0.23.0
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - "./alertmanager.yml:/config/alertmanager.yml"
+    command: --config.file=/config/alertmanager.yml
+    networks:
+      - monitor
