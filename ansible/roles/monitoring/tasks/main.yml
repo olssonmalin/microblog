@@ -1,0 +1,96 @@
+---
+- name: Install Docker
+  include_role:
+    name: install_docker
+  tags: init
+
+- name: Create monitor network
+  docker_network:
+    name: monitor
+
+- name: Create Prometheus volume
+  community.docker.docker_volume:
+    name: prometheus-data
+
+- name: Create Grafana volume
+  community.docker.docker_volume:
+    name: grafana-data
+
+- name: Create prometheus container
+  community.docker.docker_container:
+    name: prometheus
+    image: prom/prometheus:v2.31.1
+    restart_policy: "unless-stopped"
+    volumes:
+      - "prometheus.yml:/etc/prometheus/"
+      - prometheus-data:/prometheus
+      - "rules.yml:/etc/prometheus/rules.yml"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--storage.tsdb.retention.time=24h"
+      - "--web.enable-lifecycle"
+    networks:
+      - name: monitor
+        aliases: 
+          - prometheus
+    published_ports:
+      - "9090:9090"
+
+- name: Create Grafana conatiner
+  community.docker.docker_container:
+    name: grafana
+    image: grafana/grafana:8.2.4
+    restart_policy: "unless-stopped"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - name: monitor
+        aliases: 
+          - grafana
+    ports:
+      - "3000:3000"
+
+- name: Create Alert Manager container
+  community.docker.docker_container:
+    name: alertmanager
+    image: prom/alertmanager:v0.23.0
+    restart_policy: "unless-stopped"
+    ports:
+      - "9093:9093"
+    volumes:
+      - "alertmanager.yml:/config/alertmanager.yml"
+    command: --config.file=/config/alertmanager.yml
+    networks:
+      - name: monitor
+
+- name: Add prometheus datasource
+  community.grafana.grafana_datasource:
+    name: "datasource-elastic"
+    grafana_url: "http://localhost:3000"
+    ds_type: "prometheus"
+    ds_url: "http://localhost:9090"
+
+
+  # grafana:
+  #   image: grafana/grafana:8.2.4
+  #   restart: unless-stopped
+  #   volumes:
+  #     - grafana-data:/var/lib/grafana
+  #   networks:
+  #     - monitor
+  #   ports:
+  #     - "3000:3000"
+
+  # alertmanager:
+  #   image: prom/alertmanager:v0.23.0
+  #   restart: unless-stopped
+  #   ports:
+  #     - "9093:9093"
+  #   volumes:
+  #     - "./alertmanager.yml:/config/alertmanager.yml"
+  #   command: --config.file=/config/alertmanager.yml
+  #   networks:
+  #     - monitor

@@ -16,3 +16,36 @@
       MYSQL_RANDOM_ROOT_PASSWORD: "no"
     # volumes:
     #   - /data
+
+    # volumes:
+    #   - /proc:/host/proc:ro
+    #   - /sys:/host/sys:ro
+    #   - /:/rootfs:ro
+    # command:
+    #   - '--path.procfs=/host/proc'
+    #   - '--path.rootfs=/rootfs'
+    #   - '--path.sysfs=/host/sys'
+    #   - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    # ports:
+    #   - "9100:9100"
+    # networks:
+    #   - monitor
+
+- name: Create node-exporter container
+  community.docker.docker_container:
+    name: node-exporter
+    image: "prom/node-exporter:v1.2.2"
+    restart_policy: "unless-stopped"
+    published_ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootsfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    # networks:
+    #   - name: monitor
