@@ -37,3 +37,10 @@
     become_method: sudo
     roles:
         -   loadbalancer
+
+-   hosts: monitoring
+    remote_user: "{{ server_user }}"
+    become: yes
+    become_method: sudo
+    roles:
+        -   monitoring
