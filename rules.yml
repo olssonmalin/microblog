@@ -1,6 +1,6 @@
 groups:
-  - name: More get requests than 20
+  - name: Is Alarm toggled
     rules:
-      - alert: Between20and25
-        expr: flask_http_request_total{method="GET",status="200"} > 30 and flask_http_request_total{method="GET",status="200"} < 50
+      - alert: Toggled alarm
+        expr: (flask_http_request_duration_seconds_count{path="/alarmtoggle"} % 2) == 1
         for: 10s
