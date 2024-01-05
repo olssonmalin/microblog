@@ -1,6 +1,6 @@
 groups:
-  - name: More get requests than 20
+  - name: Active or not active alarm
     rules:
-      - alert: Between20and25
-        expr: flask_http_request_total{method="GET",status="200"} > 30 and flask_http_request_total{method="GET",status="200"} < 50
+      - alert: ToggleAlarm
+        expr: (sum(flask_http_request_duration_seconds_count{instance="flask", method="GET", path="/alarmtoggle", status="404"}) % 2) == 1
         for: 10s

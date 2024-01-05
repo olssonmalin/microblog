@@ -16,15 +16,36 @@
   community.docker.docker_volume:
     name: grafana-data
 
+- name: Copy volume files
+  copy:
+    src: "files/"
+    dest: "/files/"
+  when: ansible_check_mode is not defined or not ansible_check_mode
+
+- name: Copy Prometheus configuration file
+  template:
+    src: prometheus.yml.j2
+    dest: /files/prometheus.yml
+
+- name: Copy alertmanager configuration file
+  template:
+    src: alertmanager.yml.j2
+    dest: /files/alertmanager.yml
+
+- name: Copy grafana configuration file
+  template:
+    src: grafana.ini.j2
+    dest: /files/grafana.ini
+
 - name: Create prometheus container
   community.docker.docker_container:
     name: prometheus
     image: prom/prometheus:v2.31.1
     restart_policy: "unless-stopped"
     volumes:
-      - "prometheus.yml:/etc/prometheus/"
+      - "/files/prometheus.yml:/etc/prometheus/prometheus.yml"
       - prometheus-data:/prometheus
-      - "rules.yml:/etc/prometheus/rules.yml"
+      - "/files/rules.yml:/etc/prometheus/rules.yml"
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -46,6 +67,7 @@
     restart_policy: "unless-stopped"
     volumes:
       - grafana-data:/var/lib/grafana
+      - /files/grafana.ini:/etc/grafana/grafana.ini
     networks:
       - name: monitor
         aliases: 
@@ -61,36 +83,33 @@
     ports:
       - "9093:9093"
     volumes:
-      - "alertmanager.yml:/config/alertmanager.yml"
+      - "/files/alertmanager.yml:/config/alertmanager.yml"
     command: --config.file=/config/alertmanager.yml
     networks:
       - name: monitor
+        aliases: 
+          - alertmanager
 
-- name: Add prometheus datasource
+- name: create prometheus datasource
   community.grafana.grafana_datasource:
-    name: "datasource-elastic"
-    grafana_url: "http://localhost:3000"
-    ds_type: "prometheus"
-    ds_url: "http://localhost:9090"
+    name: Prometheus
+    is_default: True
+    url: "http://{{ groups['monitoring'][0] | default('localhost') }}:3000"
+    ds_type: prometheus
+    ds_url: "http://{{ groups['monitoring'][0] | default('localhost') }}:9090"
+    access: proxy
+  register: grafana_result
 
+- debug:
+    var: grafana_result 
 
-  # grafana:
-  #   image: grafana/grafana:8.2.4
-  #   restart: unless-stopped
-  #   volumes:
-  #     - grafana-data:/var/lib/grafana
-  #   networks:
-  #     - monitor
-  #   ports:
-  #     - "3000:3000"
+- name: Create Node dashboard
+  community.grafana.grafana_dashboard:
+    grafana_url: "http://{{ groups['monitoring'][0] | default('localhost') }}:3000"
+    path: "/files/{{ item.name }}.json"
+  loop:
+    - {name: node}
+    - {name: nginx}
+    # - {name: prometheus}
+    - {name: flask}
 
-  # alertmanager:
-  #   image: prom/alertmanager:v0.23.0
-  #   restart: unless-stopped
-  #   ports:
-  #     - "9093:9093"
-  #   volumes:
-  #     - "./alertmanager.yml:/config/alertmanager.yml"
-  #   command: --config.file=/config/alertmanager.yml
-  #   networks:
-  #     - monitor

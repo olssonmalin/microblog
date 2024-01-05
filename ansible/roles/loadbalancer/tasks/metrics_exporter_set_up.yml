@@ -1,0 +1,22 @@
+---
+- name: Install Docker
+  include_role:
+    name: install_docker
+  tags: init
+
+- name: Create nginx prometheus exporter
+  community.docker.docker_container:
+    name: nginx-exporter
+    image: nginx/nginx-prometheus-exporter:0.4.2
+    restart_policy: "unless-stopped"
+    # networks:
+    #   - name: monitor
+    #     aliases: 
+    #       - nginx-exporter
+    command:
+      - "--nginx.scrape-uri=https://{{ domain_name }}/metrics"
+      - "--nginx.retries=10"
+      - "--nginx.ssl-verify=false"
+      - "--web.telemetry-path=/prometheus"
+    ports:
+      - "9113:9113"
