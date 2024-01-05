@@ -1,0 +1,36 @@
+global:
+  scrape_interval: 5s # 30 seconds
+
+scrape_configs:
+  - job_name: "node"
+    static_configs:
+      - targets: ["{{ groups['database'][0] }}:9100"]
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["0.0.0.0:9090"]
+  - job_name: "flask1"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["{{ groups['appserver1'][0] }}:8000"]
+        labels:
+          instance: flask
+  - job_name: "flask2"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["{{ groups['appserver2'][0] }}:8000"]
+        labels:
+          instance: flask
+  - job_name: nginx
+    metrics_path: /prometheus
+    scrape_interval: 30s
+    static_configs: 
+    - targets: ["{{ domain_name }}:9113"]
+
+alerting:
+  alertmanagers:
+    - static_configs:
+      - targets:
+        - alertmanager:9093
+
+rule_files:
+  - rules.yml

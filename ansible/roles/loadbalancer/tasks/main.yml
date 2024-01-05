@@ -55,3 +55,5 @@
   debug:
     var: nginx_validation
 
+- name: Create new user with initial user
+  import_tasks: metrics_exporter_set_up.yml

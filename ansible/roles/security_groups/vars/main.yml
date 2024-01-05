@@ -23,6 +23,13 @@ sg_groups:
             priority: 1003
             direction: Inbound
             source_address_prefix: '0.0.0.0/0'
+        -   name: METRICS
+            protocol: Tcp
+            destination_port_range: 9113
+            access: Allow
+            priority: 1004
+            direction: Inbound
+            source_address_prefix: "{{ groups['monitoring'][0] | default('0.0.0.0/0') }}/32"
     -   name: appserver
         port_rules:
         -   name: APP
@@ -75,3 +82,11 @@ sg_groups:
             priority: 1001
             direction: Inbound
             source_address_prefix: '0.0.0.0/0'
+        -   name: HTTP
+            protocol: Tcp
+            destination_port_range: 3000
+            access: Allow
+            priority: 1002
+            direction: Inbound
+            source_address_prefix: 
+                - "{{ groups['loadbalancer'][0] | default('0.0.0.0/0') }}/32"
