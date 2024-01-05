@@ -17,6 +17,9 @@ services:
       MYSQL_PASSWORD: "example"
       MYSQL_ONETIME_PASSWORD: false
       MYSQL_RANDOM_ROOT_PASSWORD: "no"
+    labels:
+      logging: "promtail"
+      logging_jobname: "containerlogs"
     networks:
       - monitor
     healthcheck:
@@ -43,14 +46,14 @@ services:
     environment:
       SECRET_KEY: "my-secret-key"
       DATABASE_URL: "mysql+pymysql://microblog:example@dbserver/microblog"
-#
-#  test:
-#    build:
-#      context: .
-#      dockerfile: docker/Dockerfile_test
-#    volumes:
-#      - ./app:/home/microblog/app
-#      - ./tests:/home/microblog/tests
+  #
+  #  test:
+  #    build:
+  #      context: .
+  #      dockerfile: docker/Dockerfile_test
+  #    volumes:
+  #      - ./app:/home/microblog/app
+  #      - ./tests:/home/microblog/tests
 
   node-exporter:
     image: prom/node-exporter:v1.2.2
@@ -98,6 +101,29 @@ services:
       - monitor
     ports:
       - "3000:3000"
+
+  loki:
+    image: grafana/loki:2.5.0
+    restart: unless-stopped
+    volumes:
+      - ./loki-local-config.yml:/etc/loki/local-config.yml
+    command: -config.file=/etc/loki/local-config.yml
+    networks:
+      - monitor
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:2.5.0
+    restart: unless-stopped
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/promtail-config.yml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --config.file=/etc/promtail/promtail-config.yml
+    networks:
+      - monitor
+
 
   alertmanager:
     image: prom/alertmanager:v0.23.0
