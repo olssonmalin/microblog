@@ -89,4 +89,27 @@ sg_groups:
             priority: 1002
             direction: Inbound
             source_address_prefix: 
+                - '0.0.0.0/0'
+        -   name: HTTPS
+            protocol: Tcp
+            destination_port_range: 443
+            access: Allow
+            priority: 1003
+            direction: Inbound
+            source_address_prefix: '0.0.0.0/0'
+        -   name: LOKI
+            protocol: Tcp
+            destination_port_range: 3100
+            access: Allow
+            priority: 1004
+            direction: Inbound
+            source_address_prefix: 
+                - "{{ groups['loadbalancer'][0] | default('0.0.0.0/0') }}/32"
+        -   name: PROMETHEUS
+            protocol: Tcp
+            destination_port_range: 3100
+            access: Allow
+            priority: 1005
+            direction: Inbound
+            source_address_prefix: 
                 - "{{ groups['loadbalancer'][0] | default('0.0.0.0/0') }}/32"

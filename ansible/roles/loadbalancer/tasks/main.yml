@@ -57,3 +57,6 @@
 
 - name: Create new user with initial user
   import_tasks: metrics_exporter_set_up.yml
+
+# - name: Set up promtail
+#   import_tasks: promtail_set_up.yml

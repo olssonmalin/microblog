@@ -75,6 +75,9 @@
     ports:
       - "3000:3000"
 
+- name: set up Loki and Promtail
+  include_tasks: loki_set_up.yml
+
 - name: Create Alert Manager container
   community.docker.docker_container:
     name: alertmanager
@@ -90,13 +93,27 @@
         aliases: 
           - alertmanager
 
-- name: create prometheus datasource
+- name: Add Prometheus datasource
   community.grafana.grafana_datasource:
     name: Prometheus
     is_default: True
     url: "http://{{ groups['monitoring'][0] | default('localhost') }}:3000"
+    # url: "http://{{ domain_name }}/grafana/"
     ds_type: prometheus
-    ds_url: "http://{{ groups['monitoring'][0] | default('localhost') }}:9090"
+    ds_url: "http://prometheus:9090"
+    access: proxy
+  register: grafana_result
+
+- debug:
+    var: grafana_result 
+
+- name: Add Loki as datasource
+  community.grafana.grafana_datasource:
+    name: Loki
+    url: "http://{{ groups['monitoring'][0] | default('localhost') }}:3000"
+    # url: "http://{{ domain_name }}/grafana/"
+    ds_type: loki
+    ds_url: "http://loki:3100"
     access: proxy
   register: grafana_result
 
@@ -107,9 +124,13 @@
   community.grafana.grafana_dashboard:
     grafana_url: "http://{{ groups['monitoring'][0] | default('localhost') }}:3000"
     path: "/files/{{ item.name }}.json"
+    overwrite: True
   loop:
     - {name: node}
     - {name: nginx}
     # - {name: prometheus}
     - {name: flask}
+  ignore_errors: true
+
+
 
