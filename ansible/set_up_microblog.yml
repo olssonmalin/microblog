@@ -1,4 +1,3 @@
-# Gather facts from remote instance and set as hosts
 ---
 -   hosts: local
     connection: local
@@ -44,3 +43,11 @@
     become_method: sudo
     roles:
         -   monitoring
+
+-   name: Set up promtail
+    hosts: loadbalancer
+    remote_user: "{{ server_user }}"
+    become: yes
+    become_method: sudo
+    roles:
+        -   promtail_setup

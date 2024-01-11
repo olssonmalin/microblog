@@ -1,0 +1,17 @@
+---
+- name: Copy promtail config
+  template:
+    src: "promtail-config.yml.j2"
+    dest: "/etc/promtail-config.yml"
+  when: ansible_check_mode is not defined or not ansible_check_mode
+
+- name: Create promtail conatiner
+  community.docker.docker_container:
+    name: promtail
+    image:  grafana/promtail:2.5.0
+    restart_policy: "unless-stopped"
+    volumes:
+      - "/etc/promtail-config.yml:/etc/promtail/promtail-config.yml"
+      - "/var/log/nginx/:/var/log/nginx/"
+    command: 
+      - "--config.file=/etc/promtail/promtail-config.yml"
