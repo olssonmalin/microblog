@@ -32,8 +32,9 @@ från att tjänsterna installeras med hjälp av Docker.
 För att installera Promtail har vi använt imagen `grafana/promtail:2.5.0`. [3] För att få igång en fungerande container
 behöver vi skicka med två saker vid instansiering: volymer och en konfigurationsfil. Den enda volym som behövs för att
 Promtail ska starta upp är en volym med just en konfigurationsfil. I vårat fall satte vi upp den volymen som
-`./promtail-config.yml:/etc/promtail/promtail-config.yml`. Vi behöver även lägga till ett kommando:
-`command: --config.file=/etc/promtail/promtail-config.yml`. Detta berättar för Promtail att konfigurationsfilen ska
+`./promtail-config.yml:/etc/promtail/promtail-config.yml`. För att promtail ska få tillgång till den data vi vill skicka till Loki lägger vi också in log-filerna från nginx som volym till containern: `/var/log/nginx/:/var/log/nginx/`.
+
+Vi behöver även lägga till ett kommando: `command: --config.file=/etc/promtail/promtail-config.yml`. Detta berättar för Promtail att konfigurationsfilen ska
 hämtas från `/etc/promtail/promtail-config.yml`. Vi återkommer till andra volymer senare.
 
 #### Konfiguration
@@ -61,7 +62,7 @@ av någon anledning går ner.
 
 ```
 clients:
-  - url: http://loki:3100/loki/api/v1/push
+  - url: http://{{ groups['monitoring'][0] | default('localhost') }}:3100/loki/api/v1/push
 ```
 
 I "clients"-blocket konfigurerar man vilka Loki-instanser som Promtail-instansen ska pusha till. Det går att pusha från
@@ -70,73 +71,23 @@ Promtail-instans per Loki-instans. [4] I clients-blocket kan man specificera sak
 för vårat use case räcker det gott med en url. URL:en ska korrespondera med den Loki-instans man vill pusha till.
 Default-port för Loki är `3100`.
 
+I vårt fall sätter vi upp promtail på en annan VM än loki startas på för att få tillgång till de loggarn som promtail ska skicka till Loki. Därför använder vi en template i ansible för att skriva ut IP-adressen till Loki. 
+
 Nu kommer vi till the nitty gritty av Promtails config:
 
 ```
 scrape_configs:
-  - job_name: docker
-    docker_sd_configs:
-      - host: unix:///var/run/docker.sock
-        refresh_interval: 5s
-        filters:
-          - name: label
-            values: [ "logging=promtail" ]
-    relabel_configs:
-      - source_labels: [ '__meta_docker_container_name' ]
-        regex: '/(.*)'
-        target_label: 'container'
-      - source_labels: [ '__meta_docker_container_log_stream' ]
-        target_label: 'logstream'
-      - source_labels: [ '__meta_docker_container_label_logging_jobname' ]
-        target_label: 'job'
+  - job_name: nginx
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: nginx
+          __path__: /var/log/nginx/*.log
 ```
 
 `scrape_configs` konfigurerar vad Promtail ska läsa för information, detta blir alltså det som skickas vidare till Loki.
-Det är en del som händer på ganska få rader här. Vi tar det i små delar i taget:
-
-```
-scrape_configs:
-  - job_name: docker
-    docker_sd_configs:
-      - host: unix:///var/run/docker.sock
-        refresh_interval: 5s
-        filters:
-          - name: label
-            values: [ "logging=promtail" ]
-```
-
-Här definieras `scrape-configs`-blocket och vi sätter ett namn för det första (och enda i det här fallet) jobbnamnet.
-Själva jobbet består av `docker_sd_configs`-blocket (kombinerat med `relabel_configs`, mer om det senare) som beskriver
-hur Promtail ska interagera med Docker daemon API:t för att upptäcka containers som körs på samma host som Promtail. [5]
-Nu kommer vi tillbaks lite till volymer. Vi vill komma åt containers som körs på hosten vilket egentligen är
-utanför Promtail-containerns scope. Detta innebär att vi behöver ange en volym för att ge Promtail tillgång till
-informationen. Vi behöver därför i vår konfiguration av Promtail-containern lägga till följande volym:
-`/var/run/docker.sock:/var/run/docker.sock`. Denna anges sedan som `host` i `docker_sd_configs`-blocket, vilket ger
-Promtail information om andra containrar på hosten. `refresh_interval` bestämmer hur ofta denna information hämtas.
-
-I `filters`-blocket bestämmer vi vilka containrar som Promtail ska hämta information ifrån. I vårat fall filtrerar vi på
-container `labels`, närmare bestämt de som har en label `logging` med värde `promtail`. För att detta ska funka behöver
-vi sätta en label med key-value pair `logging: "promtail"` på den eller de containrar vi vill ska skicka information
-till Promtail.
-
-Nu kommer vi till det tidigare nämnda `relabel_configs`-blocket:
-
-```
-    relabel_configs:
-      - source_labels: [ '__meta_docker_container_name' ]
-        regex: '/(.*)'
-        target_label: 'container'
-      - source_labels: [ '__meta_docker_container_log_stream' ]
-        target_label: 'logstream'
-      - source_labels: [ '__meta_docker_container_label_logging_jobname' ]
-        target_label: 'job'
-```
-
-Syftet med det här blocket är att mappa om metadata från Docker till labels som skickas vidare i strömmen till Loki. Vi
-extraherar metadatan från `source_labels` och lägger till ett label på den innan den skickas vidare till Loki. Det är
-inte helt nödvändigt att göra detta steg, men det hjälper för att transformera data så den blir någorlunda
-standardiserad innan den skickas vidare och persisteras i Loki. Det är särskilt användbart om man har flera datakällor,
-till exempel flera containrar.
+Det är en del som händer på ganska få rader här. I vår lösning vill vi hämta loggar från Nginx därför har vi ett jobb som får heta `nginx`. Källar till loggarna defineras i det här fallet med `static_configs` som består utav en lista där varje artikel representerar en källa från vart promtail hämtar data ifrån. Vi klarar oss med en artikel där `target` är satt till `localhost`, med det menas att datan finns att hämta på samma maskin. Därefter defineras `labels` med platsen på datan tillsammans med ett jobb-namn för datan. Med denna konfiguration hämtar Promtail data från filer med filändelsen `.log` som finns på samma maskin i sökväg `/var/log/nginx/`.
 
 Den fulla konfigurationsfilen blir:
 
@@ -149,24 +100,17 @@ positions:
   filename: /tmp/positions.yaml
 
 clients:
-  - url: http://loki:3100/loki/api/v1/push
+  - url: http://{{ groups['monitoring'][0] | default('localhost') }}:3100/loki/api/v1/push
 
 scrape_configs:
-  - job_name: docker
-    docker_sd_configs:
-      - host: unix:///var/run/docker.sock
-        refresh_interval: 5s
-        filters:
-          - name: label
-            values: [ "logging=promtail" ]
-    relabel_configs:
-      - source_labels: [ '__meta_docker_container_name' ]
-        regex: '/(.*)'
-        target_label: 'container'
-      - source_labels: [ '__meta_docker_container_log_stream' ]
-        target_label: 'logstream'
-      - source_labels: [ '__meta_docker_container_label_logging_jobname' ]
-        target_label: 'job'
+  - job_name: nginx
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: nginx
+          __path__: /var/log/nginx/*.log
+
 ```
 
 ### Loki
@@ -179,31 +123,27 @@ sätter är `./loki-local-config.yml:/etc/loki/local-config.yml`. Kommandot blir
 #### Konfiguration
 
 Config-filen för Loki är större än Promtails men innehåller också mer boilerplate. I vårat fall har vi använt en fil
-från Loki-repot på Github. [7] Den fulla konfigurationsfilen är:
+från Loki-repot på Github. [7] Delar är konfigurationsfilen är justerad för vår lösning.  Den fulla konfigurationsfilen är:
 
 ```
 auth_enabled: false
 
 server:
   http_listen_port: 3100
-  grpc_listen_port: 9096
+  # grpc_listen_port: 9096
 
-ingester:
-  wal:
-    enabled: true
-    dir: /tmp/wal
-  lifecycler:
-    address: 127.0.0.1
-    ring:
-      kvstore:
-        store: inmemory
-      replication_factor: 1
-    final_sleep: 0s
-  chunk_idle_period: 1h       # Any chunk not receiving new logs in this time will be flushed
-  max_chunk_age: 1h           # All chunks will be flushed when they hit this age, default is 1h
-  chunk_target_size: 1048576  # Loki will attempt to build chunks up to 1.5MB, flushing first if chunk_idle_period or max_chunk_age is reached first
-  chunk_retain_period: 30s    # Must be greater than index read cache TTL if using an index cache (Default index read cache TTL is 5m)
-  max_transfer_retries: 0     # Chunk transfers disabled
+
+common:
+  path_prefix: /tmp/loki
+  storage:
+    filesystem:
+      chunks_directory: /tmp/loki/chunks
+      rules_directory: /tmp/loki/rules
+  replication_factor: 1
+  instance_addr: 127.0.0.1
+  ring:
+    kvstore:
+      store: inmemory
 
 schema_config:
   configs:
@@ -245,7 +185,7 @@ ruler:
     local:
       directory: /tmp/loki/rules
   rule_path: /tmp/loki/rules-temp
-  alertmanager_url: http://localhost:9093
+  alertmanager_url: http://alertmanager:9093
   ring:
     kvstore:
       store: inmemory
@@ -271,6 +211,8 @@ istället för att sikta loggarna manuellt. Man kan även bygga vidare på detta
 särskilda logghändelser över tid.
 
 ## Hur Loki passar in i DevOps
+
+Inom DevOps vill man att information ska vara tillgänglig mellan olika roller, därför är det fördelaktigt att använda sig att log management med Loki som samlar loggar i ett gränssnitt. Roller som kan behöva tillgänglighet till loggar men inte har tillgång till logfiler kan se datan utan att behöva få tillgång till logfilerna. En annan aspekt inom devops är lärande och möjligheten att presentera arbete för gruppen, det hjälper Loki med genom att få loggar samlade. Samlingen av loggar ger en bättre överblick och underlättar kommunikation med stakeholders.
 
 ## Referenser
 
