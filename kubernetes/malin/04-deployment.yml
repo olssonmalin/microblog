@@ -1,0 +1,40 @@
+# 01-deployment.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microblog
+spec:
+  selector:
+    matchLabels:
+      app: microblog
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: microblog
+    spec:
+      containers:
+      - image: "jflindberg/microblog:v1.3.0-prod"
+        imagePullPolicy: Always
+        name: microblog
+        resources: 
+          requests:
+            cpu: 250m
+          limits:
+            cpu: 250m
+        env:
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: microblog-secrets
+              key: SECRET_KEY
+        - name: DATABASE_URL
+          value: mysql+pymysql://microblog:micropassw@mysql/microblog
+        - name: APP_VERSION
+          value: "v1.3.0"
+        ports:
+        - containerPort: 5000
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 5000
